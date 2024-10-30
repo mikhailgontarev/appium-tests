@@ -1,9 +1,0 @@
-{
-  "platformName": "Android",
-  "automationName": "uiautomator2",
-  "deviceName": "Android",
-  "appPackage": "com.playrix.township",
-  "appActivity": ".Launcher",
-  "udid": "emulator-5554",
-  "appWaitForLaunch": true
-}

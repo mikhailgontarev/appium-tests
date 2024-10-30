@@ -1,13 +1,11 @@
 
-from airtest.core.api import *
+from app_images.app_elements import app_ui_elements
 
 
 def test_begin(driver):
-    ernie_coord = wait(Template('Ernie.png'))
-    touch(ernie_coord)
-    field_coord = wait(Template('empty_field.png'))
-    touch(field_coord)
-    wheat_coord = wait(Template('wheat.png'))
-    swipe(wheat_coord, field_coord)
-    sown_field_coord = wait(Template('sown_field.png'), timeout=5)
-    assert sown_field_coord, 'Wheat has not planted'
+    driver.wait_img_element(app_ui_elements.persons.ernie).click()
+    field = driver.wait_img_element(app_ui_elements.main_screen.empty_field)
+    field.click()
+    wheat = driver.wait_img_element(app_ui_elements.main_screen.wheat)
+    wheat.drag_to(field.position)
+    assert driver.wait_img_element(app_ui_elements.main_screen.sown_field, timeout=5), 'Wheat has not planted'

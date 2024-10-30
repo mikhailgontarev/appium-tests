@@ -5,10 +5,11 @@ import pytest
 import subprocess
 
 from appium.options.android import UiAutomator2Options
+from selenium.webdriver.common.by import By
 
 from airtest.core.api import *
-from airtest.core.helper import G
 from helpers.my_driver import MyDriver
+from app_images.app_elements import app_ui_elements
 
 
 APPIUM_SERVER_URL = 'http://localhost:4723'
@@ -21,7 +22,7 @@ def pytest_addoption(parser):
 @pytest.fixture(scope='session')
 def get_capabilities(request):
     capabilities_file = request.config.getoption('caps')
-    with open(os.path.join(os.path.dirname(__file__), f'devices_capabilities/{capabilities_file}.json'), 'r') as f:
+    with open(os.path.join(os.path.dirname(__file__), f'../test_devices_capabilities/{capabilities_file}.json'), 'r') as f:
         capabilities = json.load(f)
     return capabilities
 
@@ -42,19 +43,27 @@ def appium_server():
 def driver(get_capabilities, appium_server):
     driver = MyDriver('http://localhost:4723', options=UiAutomator2Options().load_capabilities(get_capabilities))
 
-    #   Agree EULA and continuing using simulator
-    touch(wait(Template('OK.png')))
-    display_resolution = driver.device.get_current_resolution()
-    while not exists(Template('keep_using_simulator.png')):
-        swipe((display_resolution[0] / 2, driver.device.get_current_resolution()[1] - 200),
-              (display_resolution[0] / 2, 200))
-    touch(Template('keep_using_simulator.png'))
+    #   Agree EULA dialog if it shows
+    try:
+        driver.wait_element(
+            by=By.XPATH,
+            value='//*[@resource-id="com.playrix.township:id/system_dialog_button" and @text="OK"]'
+        ).click()
+    except TimeoutError:
+        pass
+
+    # Agree using simulator (if tests run on simulator)
+    if 'emulator' in get_capabilities['udid']:
+        use_simulator_btn = None
+        for _ in range(5):
+            use_simulator_btn = driver.find_img_element(app_ui_elements.dialogs.keep_using_simulator)
+            if use_simulator_btn:
+                use_simulator_btn.click()
+                break
+            else:
+                driver.scroll_down()
+        assert use_simulator_btn, f'Button {app_ui_elements.dialogs.keep_using_simulator} has not found'
 
     yield driver
 
     driver.quit()
-
-
-@pytest.fixture(scope='module', autouse=True)
-def add_images_location_path(request):
-    G.BASEDIR.append((os.path.join(os.path.dirname(__file__), request.module.__name__.split('.')[-1])))
